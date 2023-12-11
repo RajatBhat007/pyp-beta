@@ -57,11 +57,11 @@ const db = mysql.createConnection({
     
 }; */
 
-const httpsOptions = {
-  key: fs.readFileSync("/opt/bitnami/apache/conf/connectopia.app.key"),
-  cert: fs.readFileSync("/opt/bitnami/apache/conf/connectopia.app.crt"),
-  // passphrase: "Tgc@0987",
-};
+// const httpsOptions = {
+//   key: fs.readFileSync("/opt/bitnami/apache/conf/connectopia.app.key"),
+//   cert: fs.readFileSync("/opt/bitnami/apache/conf/connectopia.app.crt"),
+//   // passphrase: "Tgc@0987",
+// };
 
 // const httpsOptions = {
 //   key: fs.readFileSync('D:\\Skillmuni.in SSL Certificate file\\skillmuni_key.pem'),
@@ -434,9 +434,10 @@ app.get("/getUserUploadDetails", (req, res) => {
         console.error(error);
         res.status(500).json({ error: "Error retrieving user upload details" });
       } else {
-        // Modify the results to include the file paths relative to the "uploads" directory
-        const userDetails = results.map((result) => {
-          return {
+        // Group the results by user details log
+        const userDetailsMap = new Map();
+        results.forEach((result) => {
+          const userDetails = userDetailsMap.get(result.id_userdetailslog) || {
             id_userdetailslog: result.id_userdetailslog,
             id_user: result.id_user,
             org_id: result.org_id,
@@ -452,22 +453,28 @@ app.get("/getUserUploadDetails", (req, res) => {
             file_context: result.file_context,
             sub_type: result.sub_type,
             upload_datetime: result.upload_datetime,
-            feedback: {
-              id_feedback: result.id_feedback,
-              feedback_given_by_id_user: result.feedback_given_by_id_user,
-              feedback_given_by_org_id: result.feedback_given_by_org_id,
-              feedback_given_by_user_id: result.feedback_given_by_user_id,
-              rating: result.rating,
-              user_feedback: result.user_feedback,
-              feedback_datetime: result.feedback_datetime,
-              Well_Groomed: result.Well_Groomed,
-              Confidence_level: result.Confidence_level,
-              subject_knowledge: result.subject_knowledge,
-            },
+            feedback: [],
           };
+
+          userDetails.feedback.push({
+            id_feedback: result.id_feedback,
+            feedback_given_by_id_user: result.feedback_given_by_id_user,
+            feedback_given_by_org_id: result.feedback_given_by_org_id,
+            feedback_given_by_user_id: result.feedback_given_by_user_id,
+            rating: result.rating,
+            user_feedback: result.user_feedback,
+            feedback_datetime: result.feedback_datetime,
+            Well_Groomed: result.Well_Groomed,
+            Confidence_level: result.Confidence_level,
+            subject_knowledge: result.subject_knowledge,
+          });
+
+          userDetailsMap.set(result.id_userdetailslog, userDetails);
         });
 
-        res.json(userDetails);
+        // Convert the Map values to an array
+        const userDetailsArray = Array.from(userDetailsMap.values());
+        res.json(userDetailsArray);
       }
     }
   );
@@ -959,10 +966,10 @@ app.get("/getCodeOfEthicLogs", (req, res) => {
   });
 });
 
-const server = https.createServer(httpsOptions, app).listen(2000, () => {
-  console.log("Server running on https://localhost:2000/");
-});
-
-// app.listen(port, () => {
-//   console.log(`Server is running on port ${port}`);
+// const server = https.createServer(httpsOptions, app).listen(2000, () => {
+//   console.log("Server running on https://localhost:2000/");
 // });
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
