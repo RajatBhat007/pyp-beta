@@ -21,7 +21,7 @@ app.use(cors());
 const fileStorage = multer.memoryStorage();
 const fileUpload = multer({
   storage: fileStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit (you can adjust this limit)
+  limits: { fileSize: 50 * 1024 * 1024 }, // 10MB limit (you can adjust this limit)
 });
 
 const excelStorage = multer.memoryStorage();
@@ -283,6 +283,9 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
   const sub_type = req.query.sub_type;
   const user_firstname = req.query.user_firstname;
   const user_lastname = req.query.user_lastname;
+  const rtm_id_user = req.query.rtm_id_user;
+  const rtm_user_id = req.query.rtm_user_id;
+  const rtm_org_id = req.query.rtm_org_id;
 
   if (
     !id_user ||
@@ -294,7 +297,10 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
     !file_context ||
     !sub_type ||
     !user_firstname ||
-    !user_lastname
+    !user_lastname ||
+    !rtm_id_user ||
+    !rtm_user_id ||
+    !rtm_org_id
   ) {
     return res.status(400).json({ error: "Missing required parameters" });
   }
@@ -303,14 +309,6 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
 
   if (!file) {
     return res.status(400).json({ error: "No file provided" });
-  }
-
-  // Calculate the file size in bytes
-  const fileSize = file.buffer.byteLength;
-
-  // Check for file size error
-  if (fileSize > 10 * 1024 * 1024) {
-    return res.status(400).json({ error: "File size exceeds the 10MB limit" });
   }
 
   const { originalname, mimetype, buffer } = file;
@@ -362,12 +360,6 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
 
       const uploadFileSizeLimit = uploadFileResults[0].file_size;
 
-      if (fileSize > uploadFileSizeLimit) {
-        return res.status(400).json({
-          error: `File size exceeds the allowed limit for ${fileType}`,
-        });
-      }
-
       // Create a user-specific subdirectory if it doesn't exist
       const userUploadDirectory = `uploads/${id_user}/${fileType}`;
       if (!fs.existsSync(userUploadDirectory)) {
@@ -383,7 +375,7 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
 
       // Insert the file information into tbl_userupload_details
       db.query(
-        "INSERT INTO tbl_userupload_details (id_user, org_id, user_id, receivers_id_user, receiver_org_id, receiver_user_id, file_type, file_name, file_path, status, user_message, file_context, sub_type,user_firstname, user_lastname,upload_datetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)",
+        "INSERT INTO tbl_userupload_details (id_user, org_id, user_id, receivers_id_user, receiver_org_id, receiver_user_id, rtm_id_user, rtm_org_id, rtm_user_id, file_type, file_name, file_path, status, user_message, file_context, sub_type,user_firstname, user_lastname,upload_datetime) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)",
         [
           id_user,
           org_id,
@@ -391,6 +383,9 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
           receivers_id_user,
           receiver_org_id,
           receiver_user_id,
+          rtm_id_user,
+          rtm_org_id,
+          rtm_user_id,
           fileType,
           originalname,
           filePath,
@@ -428,7 +423,8 @@ app.get("/getUserUploadDetails", (req, res) => {
   // Retrieve user upload details for the specified user
   db.query(
     "SELECT ud.id_userdetailslog, ud.id_user, ud.org_id, ud.user_id, ud.file_type, ud.file_name, ud.file_path, ud.user_message, ud.file_context, ud.sub_type, ud.upload_datetime, " +
-      "uf.id_feedback, uf.receivers_id_user AS feedback_given_by_id_user, uf.receiver_org_id AS feedback_given_by_org_id, uf.receiver_user_id AS feedback_given_by_user_id, uf.rating, uf.feedback AS user_feedback, uf.feedback_datetime AS feedback_datetime " +
+      "uf.id_feedback, uf.receivers_id_user AS feedback_given_by_id_user, uf.receiver_org_id AS feedback_given_by_org_id, uf.receiver_user_id AS feedback_given_by_user_id, uf.rating, uf.feedback AS user_feedback, uf.feedback_datetime AS feedback_datetime, " +
+      "uf.Well_Groomed, uf.Confidence_level, uf.subject_knowledge " +
       "FROM tbl_userupload_details ud " +
       "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
       "WHERE ud.id_user = ? AND ud.org_id = ? AND ud.user_id = ?",
@@ -464,6 +460,9 @@ app.get("/getUserUploadDetails", (req, res) => {
               rating: result.rating,
               user_feedback: result.user_feedback,
               feedback_datetime: result.feedback_datetime,
+              Well_Groomed: result.Well_Groomed,
+              Confidence_level: result.Confidence_level,
+              subject_knowledge: result.subject_knowledge,
             },
           };
         });
@@ -485,7 +484,8 @@ app.get(
     // Retrieve uploaded files and associated feedback
     db.query(
       "SELECT ud.id_userdetailslog, ud.id_user, ud.org_id, ud.user_id, ud.file_context, ud.sub_type, ud.file_type, ud.file_name, ud.file_path, ud.user_firstname, ud.user_lastname, ud.user_message, ud.upload_datetime, " +
-        "uf.id_feedback, uf.receivers_id_user AS feedback_given_by_id_user, uf.receiver_org_id AS feedback_given_by_org_id, uf.receiver_user_id AS feedback_given_by_user_id, uf.rating, uf.feedback AS user_feedback, uf.feedback_datetime AS feedback_datetime " +
+        "uf.id_feedback, uf.receivers_id_user AS feedback_given_by_id_user, uf.receiver_org_id AS feedback_given_by_org_id, uf.receiver_user_id AS feedback_given_by_user_id, uf.rating, uf.feedback AS user_feedback, uf.feedback_datetime AS feedback_datetime, " +
+        "uf.Well_Groomed, uf.Confidence_level, uf.subject_knowledge " +
         "FROM tbl_userupload_details ud " +
         "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
         "WHERE ud.receivers_id_user = ? AND ud.receiver_org_id = ? AND ud.receiver_user_id = ?",
@@ -516,6 +516,65 @@ app.get(
                 rating: file.rating,
                 user_feedback: file.user_feedback,
                 feedback_datetime: file.feedback_datetime,
+                Well_Groomed: file.Well_Groomed,
+                Confidence_level: file.Confidence_level,
+                subject_knowledge: file.subject_knowledge,
+              },
+            };
+          });
+
+          res.json(files);
+        }
+      }
+    );
+  }
+);
+
+app.get(
+  "/getuseruploadforRTM/:rtm_id_user/:rtm_org_id/:rtm_user_id",
+  (req, res) => {
+    const rtm_id_user = req.params.rtm_id_user;
+    const rtm_org_id = req.params.rtm_org_id;
+    const rtm_user_id = req.params.rtm_user_id;
+
+    // Retrieve uploaded files and associated feedback
+    db.query(
+      "SELECT ud.id_userdetailslog, ud.id_user, ud.org_id, ud.user_id, ud.file_context, ud.sub_type, ud.file_type, ud.file_name, ud.file_path, ud.user_firstname, ud.user_lastname, ud.user_message, ud.upload_datetime, " +
+        "uf.id_feedback, uf.receivers_id_user AS feedback_given_by_id_user, uf.receiver_org_id AS feedback_given_by_org_id, uf.receiver_user_id AS feedback_given_by_user_id, uf.rating, uf.feedback AS user_feedback, uf.feedback_datetime AS feedback_datetime, " +
+        "uf.Well_Groomed, uf.Confidence_level, uf.subject_knowledge " +
+        "FROM tbl_userupload_details ud " +
+        "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
+        "WHERE ud.rtm_id_user = ? AND ud.rtm_org_id = ? AND ud.rtm_user_id = ?",
+      [rtm_id_user, rtm_org_id, rtm_user_id],
+      (error, results) => {
+        if (error) {
+          console.error(error);
+          res.status(500).json({ error: "Error retrieving uploaded files" });
+        } else {
+          // Modify the results to include the file paths relative to the "uploads" directory
+          const files = results.map((file) => {
+            return {
+              id_userdetailslog: file.id_userdetailslog,
+              file_type: file.file_type,
+              file_name: file.file_name,
+              file_context: file.file_context,
+              sub_type: file.sub_type,
+              upload_datetime: file.upload_datetime,
+              file_path: `${file.file_path}`, // Adjust the path as needed
+              user_firstname: file.user_firstname,
+              user_lastname: file.user_lastname,
+              user_message: file.user_message,
+              feedback: {
+                id_feedback: file.id_feedback,
+                feedback_given_by_id_user: file.feedback_given_by_id_user,
+                feedback_given_by_org_id: file.feedback_given_by_org_id,
+                feedback_given_by_user_id: file.feedback_given_by_user_id,
+                rating: file.rating,
+                user_feedback: file.user_feedback,
+                feedback_datetime: file.feedback_datetime,
+                Well_Groomed: file.Well_Groomed,
+                Confidence_level: file.Confidence_level,
+                subject_knowledge: file.subject_knowledge,
               },
             };
           });
@@ -530,32 +589,43 @@ app.get(
 // Create a route to post feedback for a specific file based on id_userdetailslog
 app.post("/postFeedbackForFile", (req, res) => {
   const {
+    id_type,
+    id_value,
     id_userdetailslog,
-    receivers_id_user,
-    receiver_org_id,
-    receiver_user_id,
     feedback,
     rating,
+    Well_Groomed,
+    Confidence_level,
+    subject_knowledge,
     file_context,
     sub_type,
   } = req.body;
 
-  if (
-    !id_userdetailslog ||
-    !receivers_id_user ||
-    !receiver_org_id ||
-    !receiver_user_id ||
-    !feedback ||
-    !file_context ||
-    !sub_type
-  ) {
+  if (!id_userdetailslog || !feedback || !file_context || !sub_type) {
     return res.status(400).json({ error: "Missing required parameters" });
   }
 
+  let idFields;
+  let idValues;
+
+  // Determine the id fields based on id_type
+  if (id_type === "receivers") {
+    idFields = ["receivers_id_user", "receiver_org_id", "receiver_user_id"];
+  } else if (id_type === "rtm") {
+    idFields = ["rtm_id_user", "rtm_org_id", "rtm_user_id"];
+  } else {
+    return res.status(400).json({ error: "Invalid id_type" });
+  }
+
+  // Extract id values from id_value
+  idValues = id_value.split("/");
+
   // Check if the user has permission to provide feedback for this file
   db.query(
-    "SELECT id_user, org_id, user_id FROM tbl_userupload_details WHERE id_userdetailslog = ? AND receivers_id_user = ? AND receiver_org_id = ? AND receiver_user_id = ?",
-    [id_userdetailslog, receivers_id_user, receiver_org_id, receiver_user_id],
+    `SELECT id_user, org_id, user_id FROM tbl_userupload_details WHERE id_userdetailslog = ? AND ${idFields
+      .map((field) => `${field} = ?`)
+      .join(" AND ")}`,
+    [id_userdetailslog, ...idValues],
     (error, results) => {
       if (error) {
         console.error(error);
@@ -570,17 +640,18 @@ app.post("/postFeedbackForFile", (req, res) => {
 
       // Insert feedback into tbl_feedback
       db.query(
-        "INSERT INTO tbl_user_feedback (id_userdetailslog, receivers_id_user, receiver_org_id, receiver_user_id, feedback, feedback_datetime, given_by_id_user, given_by_org_id, given_by_user_id, rating, file_context, sub_type) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO tbl_user_feedback (id_userdetailslog, receivers_id_user, receiver_org_id, receiver_user_id, feedback, feedback_datetime, given_by_id_user, given_by_org_id, given_by_user_id, rating,  Well_Groomed,Confidence_level,subject_knowledge,file_context, sub_type) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?,?, ?, ?, ?)",
         [
           id_userdetailslog,
-          receivers_id_user,
-          receiver_org_id,
-          receiver_user_id,
+          ...idValues,
           feedback,
           id_user,
           org_id,
           user_id,
           rating,
+          Well_Groomed,
+          Confidence_level,
+          subject_knowledge,
           file_context,
           sub_type,
         ],
@@ -659,8 +730,8 @@ app.post("/uploadExcel", excelUpload.single("excelFile"), (req, res) => {
 
   // Insert data into tbl_user_upload_log
   const insertQuery =
-    "INSERT INTO tbl_user_upload_log (org_id, id_user, user_id, user_firstname, user_lastname, level1_role_id, level1_role, level3_id_user, level3_user_id, level3_firstname, level3_lastname, level3_role_id, level3_role, updated_datetime) " +
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+    "INSERT INTO tbl_user_upload_log (org_id, id_user, user_id, user_firstname, user_lastname, level1_role_id, level1_role, level3_id_user, level3_user_id, level3_firstname, level3_lastname, level3_role_id, level3_role, level4_id_user, level4_user_id, level4_firstname, level4_lastname, level4_role_id, level4_role, updated_datetime) " +
+    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
 
   // Use a transaction to ensure all or none of the data is inserted
   db.beginTransaction((err) => {
@@ -691,6 +762,12 @@ app.post("/uploadExcel", excelUpload.single("excelFile"), (req, res) => {
           row.level3_lastname,
           row.level3_role_id,
           row.level3_role,
+          row.level4_id_user,
+          row.level4_user_id,
+          row.level4_firstname,
+          row.level4_lastname,
+          row.level4_role_id,
+          row.level4_role,
         ];
 
         db.query(insertQuery, values, (error) => {
@@ -733,7 +810,7 @@ app.post("/getManagerDetails", (req, res) => {
 
   // Retrieve manager details for the specified user
   const query =
-    "SELECT user_id, user_firstname, user_lastname, level1_role_id, level1_role, level3_id_user, level3_user_id, level3_firstname, level3_lastname, level3_role_id, level3_role " +
+    "SELECT user_id, user_firstname, user_lastname, level1_role_id, level1_role, level3_id_user, level3_user_id, level3_firstname, level3_lastname, level3_role_id, level3_role,level4_id_user, level4_user_id, level4_firstname, level4_lastname, level4_role_id, level4_role " +
     "FROM tbl_user_upload_log " +
     "WHERE id_user = ? AND user_id = ? AND org_id = ?";
 
@@ -760,29 +837,87 @@ app.post("/getRoleDetails", (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Retrieve manager details for the specified user
-  const query =
-    "SELECT level1_role_id, level1_role " +
+  // Initialize variables to store role IDs
+  let level1RoleId = null;
+  let level3RoleId = null;
+  let level4RoleId = null;
+
+  // Retrieve level1_role_id for the specified user
+  const queryLevel1 =
+    "SELECT level1_role_id " +
     "FROM tbl_user_upload_log " +
     "WHERE id_user = ? AND user_id = ? AND org_id = ?";
 
-  db.query(query, [id_user, user_id, org_id], (error, results) => {
-    if (error) {
-      console.error(error);
-      res.status(500).json({ error: "Error retrieving manager details" });
-    } else {
-      if (results.length === 0) {
-        // Return a custom JSON response with level1_role_id: 3
-        res
-          .status(200)
-          .json({ level1_role_id: 3, message: "No manager details found" });
+  // Retrieve level3_role_id for the specified user
+  const queryLevel3 =
+    "SELECT level3_role_id " +
+    "FROM tbl_user_upload_log " +
+    "WHERE level3_id_user = ? AND level3_user_id = ? AND org_id = ?";
+
+  // Retrieve level4_role_id for the specified user
+  const queryLevel4 =
+    "SELECT level4_role_id " +
+    "FROM tbl_user_upload_log " +
+    "WHERE level4_id_user = ? AND level4_user_id = ? AND org_id = ?";
+
+  // Execute queries in parallel using Promise.all
+  Promise.all([
+    executeQuery(queryLevel1, [id_user, user_id, org_id]),
+    executeQuery(queryLevel3, [id_user, user_id, org_id]),
+    executeQuery(queryLevel4, [id_user, user_id, org_id]),
+  ])
+    .then((results) => {
+      // Extract results from each query
+      level1RoleId = results[0][0]?.level1_role_id;
+      level3RoleId = results[1][0]?.level3_role_id;
+      level4RoleId = results[2][0]?.level4_role_id;
+
+      // Filter out null values
+      const nonNullRoleIds = [level1RoleId, level3RoleId, level4RoleId].filter(
+        (roleId) => roleId !== null
+      );
+
+      // Build the response
+      const RoleID = nonNullRoleIds.join("");
+
+      // Check if RoleID is not empty
+      if (RoleID) {
+        res.json({ RoleID });
       } else {
-        const managerDetails = results[0];
-        res.json(managerDetails);
+        res.status(404).json({ error: "No role details found" });
       }
-    }
-  });
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).json({ error: "Error retrieving role details" });
+    });
 });
+
+// Function to execute a query with parameters
+function executeQuery(query, params) {
+  return new Promise((resolve, reject) => {
+    db.query(query, params, (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results);
+      }
+    });
+  });
+}
+
+// Function to execute a query with parameters
+function executeQuery(query, params) {
+  return new Promise((resolve, reject) => {
+    db.query(query, params, (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results);
+      }
+    });
+  });
+}
 
 //Code Of Ethics Code
 app.post("/postCodeOfEthicLog", (req, res) => {
