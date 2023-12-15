@@ -495,8 +495,16 @@ app.get(
         "uf.Well_Groomed, uf.Confidence_level, uf.subject_knowledge " +
         "FROM tbl_userupload_details ud " +
         "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
-        "WHERE ud.receivers_id_user = ? AND ud.receiver_org_id = ? AND ud.receiver_user_id = ?",
-      [receivers_id_user, receiver_org_id, receiver_user_id],
+        "WHERE ud.receivers_id_user = ? AND ud.receiver_org_id = ? AND ud.receiver_user_id = ? " +
+        "AND uf.receivers_id_user = ? AND uf.receiver_org_id = ? AND uf.receiver_user_id = ?",
+      [
+        receivers_id_user,
+        receiver_org_id,
+        receiver_user_id,
+        receivers_id_user,
+        receiver_org_id,
+        receiver_user_id,
+      ],
       (error, results) => {
         if (error) {
           console.error(error);
@@ -537,6 +545,7 @@ app.get(
   }
 );
 
+// Create a route to get details from tbl_userupload_details based on receivers_id_user, receiver_org_id, and receiver_user_id
 app.get(
   "/getuseruploadforRTM/:rtm_id_user/:rtm_org_id/:rtm_user_id",
   (req, res) => {
@@ -551,8 +560,16 @@ app.get(
         "uf.Well_Groomed, uf.Confidence_level, uf.subject_knowledge " +
         "FROM tbl_userupload_details ud " +
         "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
-        "WHERE ud.rtm_id_user = ? AND ud.rtm_org_id = ? AND ud.rtm_user_id = ?",
-      [rtm_id_user, rtm_org_id, rtm_user_id],
+        "WHERE ud.rtm_id_user = ? AND ud.rtm_org_id = ? AND ud.rtm_user_id = ? " +
+        "AND uf.receivers_id_user = ? AND uf.receiver_org_id = ? AND uf.receiver_user_id = ?",
+      [
+        rtm_id_user,
+        rtm_org_id,
+        rtm_user_id,
+        rtm_id_user,
+        rtm_org_id,
+        rtm_user_id,
+      ],
       (error, results) => {
         if (error) {
           console.error(error);
