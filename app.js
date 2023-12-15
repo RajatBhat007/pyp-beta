@@ -496,7 +496,9 @@ app.get(
         "FROM tbl_userupload_details ud " +
         "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
         "WHERE ud.receivers_id_user = ? AND ud.receiver_org_id = ? AND ud.receiver_user_id = ? " +
-        "AND uf.receivers_id_user = ? AND uf.receiver_org_id = ? AND uf.receiver_user_id = ?",
+        "AND (uf.receivers_id_user = ? OR uf.receivers_id_user IS NULL) " +
+        "AND (uf.receiver_org_id = ? OR uf.receiver_org_id IS NULL) " +
+        "AND (uf.receiver_user_id = ? OR uf.receiver_user_id IS NULL)",
       [
         receivers_id_user,
         receiver_org_id,
@@ -561,7 +563,9 @@ app.get(
         "FROM tbl_userupload_details ud " +
         "LEFT JOIN tbl_user_feedback uf ON ud.id_userdetailslog = uf.id_userdetailslog " +
         "WHERE ud.rtm_id_user = ? AND ud.rtm_org_id = ? AND ud.rtm_user_id = ? " +
-        "AND uf.receivers_id_user = ? AND uf.receiver_org_id = ? AND uf.receiver_user_id = ?",
+        "AND (uf.receivers_id_user = ? OR uf.receivers_id_user IS NULL) " +
+        "AND (uf.receiver_org_id = ? OR uf.receiver_org_id IS NULL) " +
+        "AND (uf.receiver_user_id = ? OR uf.receiver_user_id IS NULL)",
       [
         rtm_id_user,
         rtm_org_id,
