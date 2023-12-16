@@ -271,47 +271,168 @@ app.get("/getSubtypesByContext", (req, res) => {
 });
 
 // Create a route for uploading files with different types using query parameters
+// app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
+//   const id_user = req.query.id_user;
+//   const org_id = req.query.org_id;
+//   const user_id = req.query.user_id;
+//   const receivers_id_user = req.query.receivers_id_user;
+//   const receiver_org_id = req.query.receiver_org_id;
+//   const receiver_user_id = req.query.receiver_user_id;
+//   const user_message = req.query.user_message;
+//   const file_context = req.query.file_context;
+//   const sub_type = req.query.sub_type;
+//   const user_firstname = req.query.user_firstname;
+//   const user_lastname = req.query.user_lastname;
+//   const rtm_id_user = req.query.rtm_id_user;
+//   const rtm_user_id = req.query.rtm_user_id;
+//   const rtm_org_id = req.query.rtm_org_id;
+
+//   if (
+//     !id_user ||
+//     !org_id ||
+//     !user_id ||
+//     !receivers_id_user ||
+//     !receiver_org_id ||
+//     !receiver_user_id ||
+//     !file_context ||
+//     !sub_type ||
+//     !user_firstname ||
+//     !user_lastname ||
+//     !rtm_id_user ||
+//     !rtm_user_id ||
+//     !rtm_org_id
+//   ) {
+//     return res.status(400).json({ error: "Missing required parameters" });
+//   }
+
+//   const file = req.file;
+
+//   if (!file) {
+//     return res.status(400).json({ error: "No file provided" });
+//   }
+
+//   const { originalname, mimetype, buffer } = file;
+
+//   // Define a variable to store the file type based on the MIME type
+//   let fileType;
+
+//   if (mimetype.startsWith("video/")) {
+//     fileType = "video";
+//   } else if (mimetype.startsWith("audio/")) {
+//     fileType = "audio";
+//   } else if (
+//     mimetype === "application/msword" ||
+//     mimetype ===
+//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+//   ) {
+//     fileType = "docx";
+//   } else if (mimetype === "application/pdf") {
+//     fileType = "pdf";
+//   } else if (
+//     mimetype.startsWith("application/vnd.ms-powerpoint") ||
+//     mimetype ===
+//       "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+//   ) {
+//     fileType = "ppt"; // Correct MIME types for PPT and PPTX files
+//   } else if (mimetype.startsWith("image/")) {
+//     fileType = "image"; // Detect images based on MIME type
+//   } else {
+//     fileType = "unknown"; // You can handle other file types as needed
+//   }
+
+//   // Check if the uploaded file size, org_id, and file_type are within acceptable limits
+//   db.query(
+//     "SELECT file_size FROM tbl_uploadfile_master WHERE org_id = ? AND file_type = ?",
+//     [org_id, fileType],
+//     (error, uploadFileResults) => {
+//       if (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//           error: "Error checking file size and org_id",
+//         });
+//       }
+
+//       if (uploadFileResults.length === 0) {
+//         return res.status(400).json({
+//           error: "File type or org_id is not supported",
+//         });
+//       }
+
+//       const uploadFileSizeLimit = uploadFileResults[0].file_size;
+
+//       // Create a user-specific subdirectory if it doesn't exist
+//       const userUploadDirectory = `uploads/${id_user}/${fileType}`;
+//       if (!fs.existsSync(userUploadDirectory)) {
+//         fs.mkdirSync(userUploadDirectory, { recursive: true });
+//       }
+
+//       // Generate a unique file name to avoid conflicts
+//       const uniqueFileName = `${Date.now()}-${originalname}`;
+
+//       // Save the file within the user's subdirectory
+//       const filePath = `${userUploadDirectory}/${uniqueFileName}`;
+//       fs.writeFileSync(filePath, buffer);
+
+//       // Insert the file information into tbl_userupload_details
+//       db.query(
+//         "INSERT INTO tbl_userupload_details (id_user, org_id, user_id, receivers_id_user, receiver_org_id, receiver_user_id, rtm_id_user, rtm_org_id, rtm_user_id, file_type, file_name, file_path, status, user_message, file_context, sub_type,user_firstname, user_lastname,upload_datetime) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)",
+//         [
+//           id_user,
+//           org_id,
+//           user_id,
+//           receivers_id_user,
+//           receiver_org_id,
+//           receiver_user_id,
+//           rtm_id_user,
+//           rtm_org_id,
+//           rtm_user_id,
+//           fileType,
+//           originalname,
+//           filePath,
+//           "uploaded",
+//           user_message,
+//           file_context,
+//           sub_type,
+//           user_firstname,
+//           user_lastname,
+//           new Date(), // You can adjust this if needed
+//         ],
+//         (error, results) => {
+//           if (error) {
+//             console.error(error);
+//             res.status(500).json({ error: "Error uploading the file" });
+//           } else {
+//             // After successfully inserting into tbl_userupload_details, insert into tbl_uploadfile_master
+//             res.json({
+//               message: "File uploaded successfully",
+//               fileId: results.insertId,
+//             });
+//           }
+//         }
+//       );
+//     }
+//   );
+// });
+
+// General File Upload API
 app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
-  const id_user = req.query.id_user;
-  const org_id = req.query.org_id;
-  const user_id = req.query.user_id;
-  const receivers_id_user = req.query.receivers_id_user;
-  const receiver_org_id = req.query.receiver_org_id;
-  const receiver_user_id = req.query.receiver_user_id;
-  const user_message = req.query.user_message;
-  const file_context = req.query.file_context;
-  const sub_type = req.query.sub_type;
-  const user_firstname = req.query.user_firstname;
-  const user_lastname = req.query.user_lastname;
-  const rtm_id_user = req.query.rtm_id_user;
-  const rtm_user_id = req.query.rtm_user_id;
-  const rtm_org_id = req.query.rtm_org_id;
+  // Extract necessary parameters from the request
+  const {
+    id_user,
+    org_id,
+    user_id,
+    receivers_id_user,
+    receiver_org_id,
+    receiver_user_id,
+    user_message,
+    file_context,
+    sub_type,
+    user_firstname,
+    user_lastname,
+  } = req.query;
 
-  if (
-    !id_user ||
-    !org_id ||
-    !user_id ||
-    !receivers_id_user ||
-    !receiver_org_id ||
-    !receiver_user_id ||
-    !file_context ||
-    !sub_type ||
-    !user_firstname ||
-    !user_lastname ||
-    !rtm_id_user ||
-    !rtm_user_id ||
-    !rtm_org_id
-  ) {
-    return res.status(400).json({ error: "Missing required parameters" });
-  }
-
-  const file = req.file;
-
-  if (!file) {
-    return res.status(400).json({ error: "No file provided" });
-  }
-
-  const { originalname, mimetype, buffer } = file;
+  // Extract file-related parameters
+  const { originalname, mimetype, buffer } = req.file;
 
   // Define a variable to store the file type based on the MIME type
   let fileType;
@@ -333,11 +454,11 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
     mimetype ===
       "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   ) {
-    fileType = "ppt"; // Correct MIME types for PPT and PPTX files
+    fileType = "ppt";
   } else if (mimetype.startsWith("image/")) {
-    fileType = "image"; // Detect images based on MIME type
+    fileType = "image";
   } else {
-    fileType = "unknown"; // You can handle other file types as needed
+    fileType = "unknown";
   }
 
   // Check if the uploaded file size, org_id, and file_type are within acceptable limits
@@ -375,7 +496,7 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
 
       // Insert the file information into tbl_userupload_details
       db.query(
-        "INSERT INTO tbl_userupload_details (id_user, org_id, user_id, receivers_id_user, receiver_org_id, receiver_user_id, rtm_id_user, rtm_org_id, rtm_user_id, file_type, file_name, file_path, status, user_message, file_context, sub_type,user_firstname, user_lastname,upload_datetime) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)",
+        "INSERT INTO tbl_userupload_details (id_user, org_id, user_id, receivers_id_user, receiver_org_id, receiver_user_id, file_type, file_name, file_path, status, user_message, file_context, sub_type, user_firstname, user_lastname, upload_datetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           id_user,
           org_id,
@@ -383,9 +504,6 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
           receivers_id_user,
           receiver_org_id,
           receiver_user_id,
-          rtm_id_user,
-          rtm_org_id,
-          rtm_user_id,
           fileType,
           originalname,
           filePath,
@@ -402,7 +520,122 @@ app.post("/useruploadapi", fileUpload.single("file"), (req, res) => {
             console.error(error);
             res.status(500).json({ error: "Error uploading the file" });
           } else {
-            // After successfully inserting into tbl_userupload_details, insert into tbl_uploadfile_master
+            res.json({
+              message: "File uploaded successfully",
+              fileId: results.insertId,
+            });
+          }
+        }
+      );
+    }
+  );
+});
+
+app.post("/rmuseruploadapi", fileUpload.single("file"), (req, res) => {
+  // Extract necessary parameters from the request
+  const {
+    id_user,
+    org_id,
+    user_id,
+    rtm_id_user,
+    rtm_user_id,
+    rtm_org_id,
+    user_message,
+    file_context,
+    sub_type,
+    user_firstname,
+    user_lastname,
+  } = req.query;
+
+  // Extract file-related parameters
+  const { originalname, mimetype, buffer } = req.file;
+
+  // Define a variable to store the file type based on the MIME type
+  let fileType;
+
+  if (mimetype.startsWith("video/")) {
+    fileType = "video";
+  } else if (mimetype.startsWith("audio/")) {
+    fileType = "audio";
+  } else if (
+    mimetype === "application/msword" ||
+    mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    fileType = "docx";
+  } else if (mimetype === "application/pdf") {
+    fileType = "pdf";
+  } else if (
+    mimetype.startsWith("application/vnd.ms-powerpoint") ||
+    mimetype ===
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ) {
+    fileType = "ppt";
+  } else if (mimetype.startsWith("image/")) {
+    fileType = "image";
+  } else {
+    fileType = "unknown";
+  }
+
+  // Check if the uploaded file size, org_id, and file_type are within acceptable limits
+  db.query(
+    "SELECT file_size FROM tbl_uploadfile_master WHERE org_id = ? AND file_type = ?",
+    [org_id, fileType],
+    (error, uploadFileResults) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({
+          error: "Error checking file size and org_id",
+        });
+      }
+
+      if (uploadFileResults.length === 0) {
+        return res.status(400).json({
+          error: "File type or org_id is not supported",
+        });
+      }
+
+      const uploadFileSizeLimit = uploadFileResults[0].file_size;
+
+      // Create a user-specific subdirectory if it doesn't exist
+      const userUploadDirectory = `uploads/${id_user}/${fileType}`;
+      if (!fs.existsSync(userUploadDirectory)) {
+        fs.mkdirSync(userUploadDirectory, { recursive: true });
+      }
+
+      // Generate a unique file name to avoid conflicts
+      const uniqueFileName = `${Date.now()}-${originalname}`;
+
+      // Save the file within the user's subdirectory
+      const filePath = `${userUploadDirectory}/${uniqueFileName}`;
+      fs.writeFileSync(filePath, buffer);
+
+      // Insert the file information into tbl_userupload_details
+      db.query(
+        "INSERT INTO tbl_userupload_details (id_user, org_id, user_id,  rtm_id_user, rtm_user_id, rtm_org_id, file_type, file_name, file_path, status, user_message, file_context, sub_type, user_firstname, user_lastname, upload_datetime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          id_user,
+          org_id,
+          user_id,
+          rtm_id_user,
+          rtm_user_id,
+          rtm_org_id,
+          fileType,
+          originalname,
+          filePath,
+          "uploaded",
+          user_message,
+          file_context,
+          sub_type,
+          user_firstname,
+          user_lastname,
+          new Date(), // You can adjust this if needed
+        ],
+        (error, results) => {
+          if (error) {
+            console.error(error);
+            res.status(500).json({ error: "Error uploading the file" });
+          } else {
             res.json({
               message: "File uploaded successfully",
               fileId: results.insertId,
@@ -547,9 +780,8 @@ app.get(
   }
 );
 
-// Create a route to get details from tbl_userupload_details based on receivers_id_user, receiver_org_id, and receiver_user_id
 app.get(
-  "/getuseruploadforRTM/:rtm_id_user/:rtm_org_id/:rtm_user_id",
+  "/getuseruploadrtm/:rtm_id_user/:rtm_org_id/:rtm_user_id",
   (req, res) => {
     const rtm_id_user = req.params.rtm_id_user;
     const rtm_org_id = req.params.rtm_org_id;
@@ -613,6 +845,8 @@ app.get(
     );
   }
 );
+
+// Create a route to get details from tbl_userupload_details based on receivers_id_user, receiver_org_id, and receiver_user_id
 
 // Create a route to post feedback for a specific file based on id_userdetailslog
 app.post("/postFeedbackForFile", (req, res) => {
