@@ -655,7 +655,7 @@ app.get("/getUserUploadDetails", (req, res) => {
 
   // Retrieve user upload details for the specified user
   db.query(
-    "SELECT ud.id_userdetailslog, ud.id_user, ud.org_id, ud.user_id, ud.file_type, ud.file_name, ud.file_path, ud.user_message, ud.file_context, ud.sub_type, ud.upload_datetime, " +
+    "SELECT ud.id_userdetailslog, ud.id_user, ud.org_id, ud.user_id, ud.receivers_id_user, ud.rtm_id_user,ud.file_type, ud.file_name, ud.file_path, ud.user_message, ud.file_context, ud.sub_type, ud.upload_datetime, " +
       "uf.id_feedback, uf.receivers_id_user AS feedback_given_by_id_user, uf.receiver_org_id AS feedback_given_by_org_id, uf.receiver_user_id AS feedback_given_by_user_id, uf.rating, uf.feedback AS user_feedback, uf.feedback_datetime AS feedback_datetime, " +
       "uf.Well_Groomed, uf.Confidence_level, uf.subject_knowledge " +
       "FROM tbl_userupload_details ud " +
@@ -670,18 +670,21 @@ app.get("/getUserUploadDetails", (req, res) => {
         // Group the results by user details log
         const userDetailsMap = new Map();
         results.forEach((result) => {
+          console.log(result);
           const userDetails = userDetailsMap.get(result.id_userdetailslog) || {
             id_userdetailslog: result.id_userdetailslog,
             id_user: result.id_user,
             org_id: result.org_id,
             user_id: result.user_id,
             receivers_id_user: result.receivers_id_user,
+            rtm_id_user: result.rtm_id_user,
             receiver_org_id: result.receiver_org_id,
             receiver_user_id: result.receiver_user_id,
             file_type: result.file_type,
             file_name: result.file_name,
             file_path: `${result.file_path}`, // Adjust the path as needed
             status: result.status,
+
             user_message: result.user_message,
             file_context: result.file_context,
             sub_type: result.sub_type,
